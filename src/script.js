@@ -12,10 +12,10 @@ const scene = new THREE.Scene();
 // Load models
 const loader = new GLTFLoader();
 var ball;
+var pins = [];
 loader.load( 'bowling_ball/scene.gltf', function ( gltf ) {
     ball = gltf.scene;
-	scene.add(ball);
-    console.log(ball);
+//	scene.add(ball);
 
 }, undefined, function ( error ) {
 
@@ -23,12 +23,49 @@ loader.load( 'bowling_ball/scene.gltf', function ( gltf ) {
 
 } );
 
+loader.load( 'bowling_pin/scene.gltf', function ( gltf ) {
+    pins.push(gltf.scene);
+    scene.add(pins[0]);
+    for (let i = 0; i < 2; i++) {
+        let newPin = pins[0].clone();
+        newPin.position.x += 0.2;
+        newPin.position.z -= 0.2;
+        pins.push(newPin);
+        scene.add(newPin);
+
+    }
+}, undefined, function ( error ) {
+	console.error( error );
+} );
+
+
 // Lights
 
-const directionalLight = new THREE.DirectionalLight( 0xffffff, 100 );
-scene.add(directionalLight);
+// const directionalLight = new THREE.DirectionalLight( 0xffffff, 100 );
+// scene.add(directionalLight);
 // const ambientLight = new THREE.AmbientLight(0xfff, 1);
 // scene.add(ambientLight);
+const dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
+dirLight.color.setHSL( 0.1, 1, 0.95 );
+dirLight.position.set( - 1, 1.75, 1 );
+dirLight.position.multiplyScalar( 30 );
+scene.add( dirLight );
+
+dirLight.castShadow = true;
+
+dirLight.shadow.mapSize.width = 2048;
+dirLight.shadow.mapSize.height = 2048;
+
+const d = 50;
+
+dirLight.shadow.camera.left = - d;
+dirLight.shadow.camera.right = d;
+dirLight.shadow.camera.top = d;
+dirLight.shadow.camera.bottom = - d;
+
+dirLight.shadow.camera.far = 3500;
+dirLight.shadow.bias = - 0.0001;
+
 
 /**
  * Sizes
@@ -44,13 +81,18 @@ const sizes = {
 // Base camera
 const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100);
 camera.position.x = 0;
-camera.position.y = 0;
-camera.position.z = 2;
+camera.position.y = 0.5;
+camera.position.z = 1;
 scene.add(camera);
 
 // Controls
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
+let text = document.getElementById("camera");
+text.innerHTML = `x: ${camera.position.x}, y: ${camera.position.y}, z: ${camera.position.z}`;
+controls.addEventListener("change", function(e) {
+    text.innerHTML = `x: ${camera.position.x}, y: ${camera.position.y}, z: ${camera.position.z}`;
+});
 
 /**
  * Renderer
