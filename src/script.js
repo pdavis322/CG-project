@@ -16,8 +16,34 @@ var pins = [];
 Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowling_pin/scene.gltf')]).then(models => {
     ball = models[0].scene;
     //scene.add(ball);
+    let dx = 0.1, dz = -0.2;
+    let x = 0, z = 0;
     pins.push(models[1].scene);
     scene.add(pins[0]);
+    pins[0].position.x = x;
+    pins[0].position.z = z;
+    for (let i = 0; i < 9; i++) {
+        pins.push(pins[0].clone());
+        scene.add(pins[i + 1]);
+    }
+    // TODO: rewrite this, support n rows of pins
+    pins[1].position.x = dx;
+    pins[1].position.z = dz;
+    pins[2].position.x = -dx;
+    pins[2].position.z = dz;
+    for (let i = 3; i < 6; i++) {
+        pins[i].position.z = dz * 2;
+    }
+    pins[4].position.x = -dx * 2;
+    pins[5].position.x = dx * 2;
+    for (let i = 6; i < 10; i++) {
+        pins[i].position.z = dz * 3;
+    }
+    pins[6].position.x = dx;
+    pins[7].position.x = -dx;
+    pins[8].position.x = dx * 3;
+    pins[9].position.x = -dx * 3;
+    
 });
 
 
