@@ -13,30 +13,12 @@ const scene = new THREE.Scene();
 const loader = new GLTFLoader();
 var ball;
 var pins = [];
-loader.load( 'bowling_ball/scene.gltf', function ( gltf ) {
-    ball = gltf.scene;
-//	scene.add(ball);
-
-}, undefined, function ( error ) {
-
-	console.error( error );
-
-} );
-
-loader.load( 'bowling_pin/scene.gltf', function ( gltf ) {
-    pins.push(gltf.scene);
+Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowling_pin/scene.gltf')]).then(models => {
+    ball = models[0].scene;
+    //scene.add(ball);
+    pins.push(models[1].scene);
     scene.add(pins[0]);
-    for (let i = 0; i < 2; i++) {
-        let newPin = pins[0].clone();
-        newPin.position.x += 0.2;
-        newPin.position.z -= 0.2;
-        pins.push(newPin);
-        scene.add(newPin);
-
-    }
-}, undefined, function ( error ) {
-	console.error( error );
-} );
+});
 
 
 // Lights
