@@ -9,16 +9,14 @@ const canvas = document.querySelector('canvas.webgl');
 // Scene
 const scene = new THREE.Scene();
 
-// Load models
-const loader = new GLTFLoader();
 var ball;
 var pins = [];
-Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowling_pin/scene.gltf')]).then(models => {
-    ball = models[0].scene;
-    //scene.add(ball);
-    let dx = 0.1, dz = -0.2;
+// Change this to affect spacing of pins / distance from ball
+const dx = 0.1, dz = -0.2;
+
+function setupPins(pinModel) {
     let x = 0, z = 0;
-    pins.push(models[1].scene);
+    pins.push(pinModel);
     scene.add(pins[0]);
     pins[0].position.x = x;
     pins[0].position.z = z;
@@ -43,16 +41,72 @@ Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowl
     pins[7].position.x = -dx;
     pins[8].position.x = dx * 3;
     pins[9].position.x = -dx * 3;
+
+}
+
+// Load models
+const loader = new GLTFLoader();
+Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowling_pin/scene.gltf')]).then(models => {
+
+    // Bowling ball
+    ball = models[0].scene;
+    ball.position.z = dx * 58;
+    ball.scale.x = ball.scale.y = ball.scale.z = 0.5;
+    // Size of model
+    ball.position.y = .068953018;
+    scene.add(ball);
+    // Bowling pins
+    let pinModel = models[1].scene;
+    setupPins(pinModel);
+    pinModel.traverse(function(child) {
+        console.log(child);
+    });
+    // Floor texture
+    let floorMat = new THREE.MeshStandardMaterial( {
+        roughness: 0.8,
+        color: 0xffffff,
+        metalness: 0.2,
+        bumpScale: 0.0005
+    } );
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load( "hardwood/hardwood2_diffuse.jpg", function ( map ) {
+        map.wrapS = THREE.RepeatWrapping;
+        map.wrapT = THREE.RepeatWrapping;
+        map.anisotropy = 4;
+        map.repeat.set( 10, 24 );
+        map.encoding = THREE.sRGBEncoding;
+        floorMat.map = map;
+        floorMat.needsUpdate = true;
+    } );
+    textureLoader.load( "hardwood/hardwood2_bump.jpg", function ( map ) {
+        map.wrapS = THREE.RepeatWrapping;
+        map.wrapT = THREE.RepeatWrapping;
+        map.anisotropy = 4;
+        map.repeat.set( 10, 24 );
+        floorMat.bumpMap = map;
+        floorMat.needsUpdate = true;
+    } );
+    textureLoader.load( "hardwood/hardwood2_roughness.jpg", function ( map ) {
+        map.wrapS = THREE.RepeatWrapping;
+        map.wrapT = THREE.RepeatWrapping;
+        map.anisotropy = 4;
+        map.repeat.set( 10, 24 );
+        floorMat.roughnessMap = map;
+        floorMat.needsUpdate = true;
+    } );
+    const floorGeometry = new THREE.PlaneGeometry(100, 100);
+    const floorMesh = new THREE.Mesh(floorGeometry, floorMat);
+    floorMesh.receiveShadow = true;
+    floorMesh.rotation.x = -Math.PI / 2;
+    floorMesh.rotation.z = Math.PI / 2;
+    scene.add(floorMesh);
+
+    animate();
     
 });
 
 
 // Lights
-
-// const directionalLight = new THREE.DirectionalLight( 0xffffff, 100 );
-// scene.add(directionalLight);
-// const ambientLight = new THREE.AmbientLight(0xfff, 1);
-// scene.add(ambientLight);
 const dirLight = new THREE.DirectionalLight( 0xffffff, 1 );
 dirLight.color.setHSL( 0.1, 1, 0.95 );
 dirLight.position.set( - 1, 1.75, 1 );
@@ -87,10 +141,10 @@ const sizes = {
  * Camera
  */
 // Base camera
-const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 100);
+const camera = new THREE.PerspectiveCamera(50, sizes.width / sizes.height, 0.1, 100);
 camera.position.x = 0;
 camera.position.y = 0.5;
-camera.position.z = 1;
+camera.position.z = dx * 70;
 scene.add(camera);
 
 // Controls
@@ -111,23 +165,20 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0xffffff, 1);
+renderer.physicallyCorrectLights = true;
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true;
+renderer.toneMapping = THREE.ReinhardToneMapping;
 
 /**
  * Animate
  */
-
-const clock = new THREE.Clock();
-
 const animate = () =>
 {
 
-    const elapsedTime = clock.getElapsedTime()
 
-    if(ball) {
-    ball.rotation.x += 0.1;
-}
     // Update objects
-
+    ball.position.z -= 0.1;
     // Update Orbital Controls
     controls.update()
 
@@ -137,4 +188,3 @@ const animate = () =>
     // Callanimate again on the next frame
     window.requestAnimationFrame(animate);
 };
-animate();
