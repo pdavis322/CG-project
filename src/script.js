@@ -1,7 +1,9 @@
-import './style.css'
-import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import './style.css';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as CANNON from 'cannon-es';
+import CannonDebugger from 'cannon-es-debugger';
 
 // Canvas
 const canvas = document.querySelector('canvas.webgl');
@@ -9,8 +11,9 @@ const canvas = document.querySelector('canvas.webgl');
 // Scene
 const scene = new THREE.Scene();
 
-var ball;
-var pins = [];
+var ball, ballBody;
+var pins, pinBodies;
+pins = pinBodies = [];
 // Change this to affect spacing of pins / distance from ball
 const dx = 0.1, dz = -0.2;
 
@@ -44,23 +47,29 @@ function setupPins(pinModel) {
 
 }
 
+// Set up cannon
+const world = new CANNON.World();
+world.gravity.set(0, -9.82, 0);
+world.broadphase = new CANNON.NaiveBroadphase();
+world.defaultContactMaterial.contactEquationStiffness = 1e6;
+world.defaultContactMaterial.contactEquationRelaxation = 10;
+const cannonDebugger = new CannonDebugger(scene, world);
 // Load models
 const loader = new GLTFLoader();
 Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowling_pin/scene.gltf')]).then(models => {
 
     // Bowling ball
     ball = models[0].scene;
-    ball.position.z = dx * 58;
-    ball.scale.x = ball.scale.y = ball.scale.z = 0.5;
+    // Distance from pins to ball should be 60x horizontal distance between pins
+    ball.position.z = dx * 60;
     // Size of model
-    ball.position.y = .068953018;
     scene.add(ball);
     // Bowling pins
     let pinModel = models[1].scene;
     setupPins(pinModel);
-    pinModel.traverse(function(child) {
-        console.log(child);
-    });
+    // pinModel.traverse(function(child) {
+    //     console.log(child);
+    // });
     // Floor texture
     let floorMat = new THREE.MeshStandardMaterial( {
         roughness: 0.8,
@@ -100,6 +109,38 @@ Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowl
     floorMesh.rotation.x = -Math.PI / 2;
     floorMesh.rotation.z = Math.PI / 2;
     scene.add(floorMesh);
+
+    // Physics
+    // Floor body
+    const floorShape = new CANNON.Plane();
+    const floorBody = new CANNON.Body({mass: 0});
+    floorBody.addShape(floorShape);
+    floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+    world.addBody(floorBody);
+    // Bowling ball body
+    ball.scale.x = ball.scale.y = ball.scale.z = 0.5;
+    // Parameter is size of model once it has been scaled down
+    const sphereShape = new CANNON.Sphere(.068953018);
+    ballBody = new CANNON.Body({mass: 2, shape: sphereShape});
+    world.addBody(ballBody);
+    ballBody.position.z = dx * 60;
+    ballBody.position.y = 0.5;
+    ballBody.linearDamping = 0;
+    ballBody.velocity.set(0, 0, -12);
+    // Bowling pins body
+    // let box = new THREE.Box3().setFromObject(pins[0]);
+    // console.log(box.max.y - box.min.y);
+    const cylinderShape = new CANNON.Cylinder(0.028, 0.086, 0.333296895);
+    pins.forEach((p, i) => {
+        pinBodies[i] = new CANNON.Body({mass: 0.5, shape: cylinderShape});
+        world.addBody(pinBodies[i]);
+        pinBodies[i].position.set(
+            p.position.x,
+            p.position.y,
+            p.position.z
+        );
+    });
+
 
     animate();
     
@@ -156,6 +197,8 @@ controls.addEventListener("change", function(e) {
     text.innerHTML = `x: ${camera.position.x}, y: ${camera.position.y}, z: ${camera.position.z}`;
 });
 
+
+
 /**
  * Renderer
  */
@@ -176,12 +219,38 @@ renderer.toneMapping = THREE.ReinhardToneMapping;
 const animate = () =>
 {
 
-
-    // Update objects
-    ball.position.z -= 0.1;
     // Update Orbital Controls
     controls.update()
 
+
+    // Update objects
+    ball.position.set(
+        ballBody.position.x,
+        ballBody.position.y,
+        ballBody.position.z
+    );
+    ball.quaternion.set(
+        ballBody.quaternion.x,
+        ballBody.quaternion.y,
+        ballBody.quaternion.z,
+        ballBody.quaternion.w,
+    );
+    for (let i = 0; i < pins.length; i++) {
+        pins[i].position.set(
+            pinBodies[i].position.x,
+            pinBodies[i].position.y,
+            pinBodies[i].position.z
+        );
+        pins[i].quaternion.set(
+            pinBodies[i].quaternion.x,
+            pinBodies[i].quaternion.y,
+            pinBodies[i].quaternion.z,
+            pinBodies[i].quaternion.w
+        );
+    }
+
+    world.fixedStep();
+    cannonDebugger.update();
     // Render
     renderer.render(scene, camera)
 
