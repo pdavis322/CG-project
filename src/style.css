@@ -19,6 +19,7 @@ body
     outline: none;
 }
 
+/* Restart Button */
 #restartButton {
     top:1%;
     left:93%;
@@ -29,6 +30,7 @@ body
     background: orange; 
 }
 
+/* Shoot Button */
 #shoot {
     top:1%;
     left:83%;
