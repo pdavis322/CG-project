@@ -291,9 +291,9 @@ const animate = () =>
             arrowUpdate()
         }
         // Space Bar
-        // else if(move.keyCode === 32){
+        else if(move.keyCode === 32){
 
-        // }
+        }
     }
     // Update Orbital Controls
     controls.update()
