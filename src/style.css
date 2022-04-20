@@ -18,3 +18,25 @@ body
     left: 0;
     outline: none;
 }
+
+/* Restart Button */
+#restartButton {
+    top:1%;
+    left:93%;
+    width:100px;
+    height:40px;
+    position: absolute;
+    z-index: 2;
+    background: orange; 
+}
+
+/* Shoot Button */
+#shoot {
+    top:1%;
+    left:83%;
+    width:100px;
+    height:40px;
+    position: absolute;
+    z-index: 2;
+    background: red; 
+}
