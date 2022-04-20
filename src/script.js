@@ -199,10 +199,10 @@ renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.shadowMap.enabled = true;
 renderer.toneMapping = THREE.ReinhardToneMapping;
 
+// Controls
 var ballSpeed = false;
 var ballRotate = 0;
 var ballPosition = 0;
-
 
 var sourcePos = new THREE.Vector3(0, 0, 5.8);
 var targetPos = new THREE.Vector3(0, 0, 0);
@@ -212,9 +212,11 @@ arrow.setDirection(direction.normalize());
 scene.add(arrow);
 arrowUpdate();
 
+var shot = true;
 var speed = -10;
 var newSourcePos; 
 var newTargetPos; 
+
 
 function arrowUpdate(){
     newSourcePos = new THREE.Vector3(ballPosition, 0.068953018, 5.8); /// Position of the arrow
@@ -225,13 +227,11 @@ function arrowUpdate(){
     arrow.setLength(direction.length());
 }
 
-
 /**
  * Animate
  */
 const animate = () =>
 {
-
     var restartButton = document.getElementById("restartButton");
     restartButton.onclick = function restart(){
         ball.position.z = dx * 58;
@@ -247,17 +247,24 @@ const animate = () =>
         ballBody.position.x = 0.0;
         ballBody.position.z = dx * 60;
         arrowUpdate();
-        
+        shot = true;
 
+        world.removeBody(ballBody);
+        scene.remove(ball);
 
+        Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowling_pin/scene.gltf')]).then(models => {
+            setupBall(models[0].scene);
+        });
 
     }
+
     var shootButton = document.getElementById("shoot");
     shootButton.onclick = function shoot(){
         ballBody.position.y = 0.5;
         speed = -10;
         ballBody.velocity.set(0, 0, speed);
         ballSpeed = true;
+        shot = false;
     }
 
     
@@ -269,27 +276,35 @@ const animate = () =>
 
     document.onkeydown = function(move){
         if(move.keyCode === 39){
-            // move ball position right
-            ballPosition += 0.03;
-            ballBody.position.x += 0.03;
-            arrowUpdate()
+            if(shot){
+                // move ball position right
+                ballPosition += 0.03;
+                ballBody.position.x += 0.03;
+                    arrowUpdate()
+            }
         }
         else if(move.keyCode === 37){
-            //move ball position left
-            ballPosition -= 0.03;
-            ballBody.position.x -= 0.03;
-            arrowUpdate()
+            if(shot){
+                //move ball position left
+                ballPosition -= 0.03;
+                ballBody.position.x -= 0.03;
+                arrowUpdate()
+            }
         }
         else if(move.keyCode === 38){
-            ballRotate += 0.001;
-            ball.rotation.y -= 0.01;
-            arrowUpdate()
+            if(shot){
+                ballRotate += 0.001;
+                ball.rotation.y -= 0.01;
+                arrowUpdate()
+            }
         }
         else if(move.keyCode === 40){
-            ballRotate -= 0.001;
-            ball.rotation.y += 0.01;
-            arrowUpdate()
-        }
+            if(shot){
+                ballRotate -= 0.001;
+                ball.rotation.y += 0.01;
+                arrowUpdate()
+            }
+        }   
         // Space Bar
         else if(move.keyCode === 32){
 
