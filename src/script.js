@@ -20,7 +20,6 @@ function setupBall(ballModel) {
     ball = ballModel;
     // Distance from pins to ball should be 60x horizontal distance between pins
     ball.position.z = dx * 60;
-    
     // Size of model
     scene.add(ball);
     ball.scale.x = ball.scale.y = ball.scale.z = 0.5;
