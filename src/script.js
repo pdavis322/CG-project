@@ -118,6 +118,7 @@ function setupPins(pinModel) {
     for (let i = 3; i < 6; i++) {
         pinBodies[i].position.z = dz * 2;
     }
+    pinBodies[3].position.x = 0;
     pinBodies[4].position.x = -dx * 2;
     pinBodies[5].position.x = dx * 2;
     for (let i = 6; i < 10; i++) {
@@ -127,6 +128,11 @@ function setupPins(pinModel) {
     pinBodies[7].position.x = -dx;
     pinBodies[8].position.x = dx * 3;
     pinBodies[9].position.x = -dx * 3;
+    window.setTimeout(() => {
+        for (let i = 0; i < pins.length; i++) {
+            console.log(pinBodies[i].position);
+        }
+    }, 2000);
 }
 
 // Set up cannon
