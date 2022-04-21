@@ -271,6 +271,8 @@ function restart(){
     ballBody.position.y = 0.07;
     ballBody.position.x = 0.0;
     ballBody.position.z = dx * 60;
+    ballPosition = 0;
+    ballRotate = 0;
     arrowUpdate();
     setupPins();
 }
