@@ -104,7 +104,7 @@ function setupPins(pinModel) {
     // TODO: rewrite this, support n rows of pins
     // Need to do this outside of if statement for resetting pins
     for (let i = 0; i < 10; i++) {
-        pinBodies[i].position.y = 0;
+        pinBodies[i].position.y = .1666039322183284;
         pinBodies[i].velocity.setZero();
         pinBodies[i].angularVelocity.setZero();
         pinBodies[i].quaternion.set(0, 0, 0, 1);
@@ -128,12 +128,6 @@ function setupPins(pinModel) {
     pinBodies[7].position.x = -dx;
     pinBodies[8].position.x = dx * 3;
     pinBodies[9].position.x = -dx * 3;
-    window.setTimeout(() => {
-        for (let i = 0; i < pins.length; i++) {
-            console.log(pinBodies[i].position);
-        }
-    }, 2000);
-
 }
 
 function setupBackground(){
@@ -158,6 +152,11 @@ Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowl
     setupPins(models[1].scene);
     setupBackground();
     animate();
+    // Prevent pins from moving 
+    for (let i = 0; i < pins.length; i++) {
+        pinBodies[i].sleep();
+    }
+
 });
 
 
