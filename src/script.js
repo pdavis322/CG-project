@@ -27,7 +27,7 @@ function setupBall(ballModel) {
     // Physics
     // Parameter is size of model once it has been scaled down
     const sphereShape = new CANNON.Sphere(.068953018);
-    ballBody = new CANNON.Body({mass: 5, shape: sphereShape});
+    ballBody = new CANNON.Body({mass: 6, shape: sphereShape});
     world.addBody(ballBody);
     ballBody.position.z = dx * 60;
     ballBody.position.y = 0.5;
@@ -47,7 +47,7 @@ function setupFloor() {
         map.wrapS = THREE.RepeatWrapping;
         map.wrapT = THREE.RepeatWrapping;
         map.anisotropy = 4;
-        map.repeat.set( 10, 24 );
+        map.repeat.set( 10, 1);
         map.encoding = THREE.sRGBEncoding;
         floorMat.map = map;
         floorMat.needsUpdate = true;
@@ -56,7 +56,7 @@ function setupFloor() {
         map.wrapS = THREE.RepeatWrapping;
         map.wrapT = THREE.RepeatWrapping;
         map.anisotropy = 4;
-        map.repeat.set( 10, 24 );
+        map.repeat.set( 10, 1);
         floorMat.bumpMap = map;
         floorMat.needsUpdate = true;
     } );
@@ -64,21 +64,22 @@ function setupFloor() {
         map.wrapS = THREE.RepeatWrapping;
         map.wrapT = THREE.RepeatWrapping;
         map.anisotropy = 4;
-        map.repeat.set( 10, 24 );
+        map.repeat.set( 10, 1);
         floorMat.roughnessMap = map;
         floorMat.needsUpdate = true;
     } );
-    const floorGeometry = new THREE.PlaneGeometry(100, 100);
+    const floorGeometry = new THREE.PlaneGeometry(60, 1);
     const floorMesh = new THREE.Mesh(floorGeometry, floorMat);
     floorMesh.receiveShadow = true;
     floorMesh.rotation.x = -Math.PI / 2;
     floorMesh.rotation.z = Math.PI / 2;
     scene.add(floorMesh);
     // Physics
-    const floorShape = new CANNON.Plane();
-    const floorBody = new CANNON.Body({mass: 0});
+    const floorShape = new CANNON.Box(new CANNON.Vec3(60, 0.5, 1));
+    const floorBody = new CANNON.Body({mass: 0, shape: floorShape});
     floorBody.addShape(floorShape);
-    floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+    floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, Math.PI / 2);
+    floorBody.position.y = -1;
     world.addBody(floorBody);
 }
 
@@ -94,7 +95,7 @@ function setupPins(pinModel) {
         for (let i = 0; i < 10; i++) {
             pins.push(pin.clone());
             scene.add(pins[i]);
-            let pinBody = new CANNON.Body({mass: 0.1, shape: cylinderShape});
+            let pinBody = new CANNON.Body({mass: 0.375, shape: cylinderShape});
             pinBodies.push(pinBody);
             world.addBody(pinBodies[i]);
         }
@@ -128,7 +129,7 @@ function setupPins(pinModel) {
 const world = new CANNON.World();
 world.gravity.set(0, -9.82, 0);
 world.broadphase = new CANNON.NaiveBroadphase();
-world.defaultContactMaterial.contactEquationStiffness = 1e6;
+world.defaultContactMaterial.contactEquationStiffness = 1e10;
 world.defaultContactMaterial.contactEquationRelaxation = 10;
 const cannonDebugger = new CannonDebugger(scene, world);
 // Load models
@@ -185,11 +186,6 @@ scene.add(camera);
 // Controls
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
-let text = document.getElementById("camera");
-text.innerHTML = `x: ${camera.position.x}, y: ${camera.position.y}, z: ${camera.position.z}`;
-controls.addEventListener("change", function(e) {
-    text.innerHTML = `x: ${camera.position.x}, y: ${camera.position.y}, z: ${camera.position.z}`;
-});
 
 
 
@@ -252,15 +248,7 @@ function arrowUpdate(){
 // User interaction
 const restartButton = document.getElementById("restartButton");
 function restart(){
-    ball.position.z = dx * 58;
-    ball.position.y = .068953018;
-    ball.position.x = 0;
-    ballSpeed = false;
-    ballRotate = 0;
-    ball.rotation.y = 0.3;
-    ballPosition = 0;
-    speed = 0;
-    ballBody.velocity.set(0, 0, speed);
+    ballBody.velocity.setZero();
     ballBody.position.y = 0.07;
     ballBody.position.x = 0.0;
     ballBody.position.z = dx * 60;
@@ -268,6 +256,7 @@ function restart(){
 }
 restartButton.onclick = restart;
 const shootButton = document.getElementById("shoot");
+let moving = false;
 function shoot(){
     if (!moving) {
         moving = true;
@@ -275,12 +264,14 @@ function shoot(){
         speed = -10;
         ballBody.velocity.set(0, 0, speed);
         ballSpeed = true;
-        checkScore();
+        window.setTimeout(function() {
+            moving = false;
+            checkScore();
+        }, 1000);
     }
 }
 shootButton.onclick = shoot;
 
-let moving = false;
 document.onkeydown = function(move){
     if(move.keyCode === 39){
         // move ball position right
@@ -310,8 +301,10 @@ document.onkeydown = function(move){
     }
 }
 
+const score = document.getElementById("score");
 // Check number of pins down
-function pinsDown() {
+function checkScore() {
+    score.innerHTML = "Waiting...";
     let ready = false;
     let interval = window.setInterval(function() {
         if (ready) {
@@ -319,29 +312,23 @@ function pinsDown() {
             clearInterval(interval);
             let total = 0;
             for (let i = 0; i < pins.length; i++) {
-                if (Math.abs(pins[i].rotation.z) >= Math.PI / 3 ) {
+                if (pinBodies[i].position.y < -0.5 || Math.abs(pins[i].rotation.x) >= Math.PI / 3 || Math.abs(pins[i].rotation.z) >= Math.PI / 3) {
                     console.log(pins[i].rotation);
                     total++;
                 }
             }
-            console.log(total);
+            score.innerHTML = total;
         }
         else {
             console.log('not ready!');
             ready = true;
             for (let i = 0; i < pins.length; i++) {
-                if (pinBodies[i].velocity.x > 0.2 || pinBodies[i].velocity.y > 0.2 || pinBodies[i].velocity.z > 0.2) {
+                if (pinBodies[i].position.y > -0.5 && (pinBodies[i].velocity.x > 0.1 || pinBodies[i].velocity.y > 0.1 || pinBodies[i].velocity.z > 0.1)) {
                     ready = false;
                 }
             }
         }
     }, 500);
-}
-function checkScore() {
-    window.setTimeout(function() {
-        moving = false;
-        pinsDown();
-    }, 1000);
 }
 
 /**
@@ -359,7 +346,7 @@ const animate = () =>
 
     world.fixedStep();
     // Show cannon bodies
-    // cannonDebugger.update();
+    cannonDebugger.update();
     // Render
     renderer.render(scene, camera);
 
