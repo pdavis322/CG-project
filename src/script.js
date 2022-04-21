@@ -135,6 +135,13 @@ function setupPins(pinModel) {
     }, 2000);
 }
 
+function setupBackground(){
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load('background/background1.jpg', function ( texture ) {
+        scene.background = texture;  
+    } );
+}
+
 // Set up cannon
 const world = new CANNON.World();
 world.gravity.set(0, -9.82, 0);
@@ -148,6 +155,7 @@ Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowl
     setupBall(models[0].scene);
     setupFloor();
     setupPins(models[1].scene);
+    setupBackground();
     animate();
 });
 
