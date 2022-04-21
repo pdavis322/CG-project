@@ -47,3 +47,14 @@ button {
     z-index: 2;
     background: red; 
 }
+
+/* Default View Button */
+#defaultView {
+    top:1%;
+    left:73%;
+    width:100px;
+    height:40px;
+    position: absolute;
+    z-index: 2;
+    background: rgb(132, 216, 255); 
+}
