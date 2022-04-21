@@ -26,7 +26,7 @@ function setupBall(ballModel) {
     // Physics
     // Parameter is size of model once it has been scaled down
     const sphereShape = new CANNON.Sphere(.068953018);
-    ballBody = new CANNON.Body({mass: 5, shape: sphereShape});
+    ballBody = new CANNON.Body({mass: 6, shape: sphereShape});
     world.addBody(ballBody);
     ballBody.position.z = dx * 60;
     ballBody.position.y = 0.5;
@@ -46,7 +46,7 @@ function setupFloor() {
         map.wrapS = THREE.RepeatWrapping;
         map.wrapT = THREE.RepeatWrapping;
         map.anisotropy = 4;
-        map.repeat.set( 10, 24 );
+        map.repeat.set( 10, 1);
         map.encoding = THREE.sRGBEncoding;
         floorMat.map = map;
         floorMat.needsUpdate = true;
@@ -55,7 +55,7 @@ function setupFloor() {
         map.wrapS = THREE.RepeatWrapping;
         map.wrapT = THREE.RepeatWrapping;
         map.anisotropy = 4;
-        map.repeat.set( 10, 24 );
+        map.repeat.set( 10, 1);
         floorMat.bumpMap = map;
         floorMat.needsUpdate = true;
     } );
@@ -63,40 +63,54 @@ function setupFloor() {
         map.wrapS = THREE.RepeatWrapping;
         map.wrapT = THREE.RepeatWrapping;
         map.anisotropy = 4;
-        map.repeat.set( 10, 24 );
+        map.repeat.set( 10, 1);
         floorMat.roughnessMap = map;
         floorMat.needsUpdate = true;
     } );
-    const floorGeometry = new THREE.PlaneGeometry(100, 100);
+    const floorGeometry = new THREE.PlaneGeometry(7, 1);
     const floorMesh = new THREE.Mesh(floorGeometry, floorMat);
     floorMesh.receiveShadow = true;
     floorMesh.rotation.x = -Math.PI / 2;
     floorMesh.rotation.z = Math.PI / 2;
+    floorMesh.position.z = 3;
     scene.add(floorMesh);
     // Physics
-    const floorShape = new CANNON.Plane();
-    const floorBody = new CANNON.Body({mass: 0});
+    const floorShape = new CANNON.Box(new CANNON.Vec3(7, 0.5, 1));
+    const floorBody = new CANNON.Body({mass: 0, shape: floorShape});
+    floorBody.position.z = 6.5;
     floorBody.addShape(floorShape);
-    floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+    floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, Math.PI / 2);
+    floorBody.position.y = -1;
     world.addBody(floorBody);
 }
 
 function setupPins(pinModel) {
-    let pin = pinModel;
-    pin.traverse(function(child) {
-        if (child.geometry !== undefined) {
-            child.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, -.1666039322183284, 0));
+    if (pinModel) {
+        let pin = pinModel;
+        pin.traverse(function(child) {
+            if (child.geometry !== undefined) {
+                child.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, -.1666039322183284, 0));
+            }
+        });
+        const cylinderShape = new CANNON.Cylinder(0.028, 0.05, 0.333296895);
+        for (let i = 0; i < 10; i++) {
+            pins.push(pin.clone());
+            scene.add(pins[i]);
+            let pinBody = new CANNON.Body({mass: 0.375, shape: cylinderShape});
+            pinBodies.push(pinBody);
+            world.addBody(pinBodies[i]);
         }
-    });
-    const cylinderShape = new CANNON.Cylinder(0.028, 0.05, 0.333296895);
-    for (let i = 0; i < 10; i++) {
-        pins.push(pin.clone());
-        scene.add(pins[i]);
-        let pinBody = new CANNON.Body({mass: 0.1, shape: cylinderShape});
-        pinBodies.push(pinBody);
-        world.addBody(pinBodies[i]);
     }
     // TODO: rewrite this, support n rows of pins
+    // Need to do this outside of if statement for resetting pins
+    for (let i = 0; i < 10; i++) {
+        pinBodies[i].position.y = 0;
+        pinBodies[i].velocity.setZero();
+        pinBodies[i].angularVelocity.setZero();
+        pinBodies[i].quaternion.set(0, 0, 0, 1);
+    }
+    pinBodies[0].position.x = 0;
+    pinBodies[0].position.z = 0;
     pinBodies[1].position.x = dx;
     pinBodies[1].position.z = dz;
     pinBodies[2].position.x = -dx;
@@ -104,6 +118,7 @@ function setupPins(pinModel) {
     for (let i = 3; i < 6; i++) {
         pinBodies[i].position.z = dz * 2;
     }
+    pinBodies[3].position.x = 0;
     pinBodies[4].position.x = -dx * 2;
     pinBodies[5].position.x = dx * 2;
     for (let i = 6; i < 10; i++) {
@@ -113,13 +128,18 @@ function setupPins(pinModel) {
     pinBodies[7].position.x = -dx;
     pinBodies[8].position.x = dx * 3;
     pinBodies[9].position.x = -dx * 3;
+    window.setTimeout(() => {
+        for (let i = 0; i < pins.length; i++) {
+            console.log(pinBodies[i].position);
+        }
+    }, 2000);
 }
 
 // Set up cannon
 const world = new CANNON.World();
 world.gravity.set(0, -9.82, 0);
 world.broadphase = new CANNON.NaiveBroadphase();
-world.defaultContactMaterial.contactEquationStiffness = 1e6;
+world.defaultContactMaterial.contactEquationStiffness = 1e10;
 world.defaultContactMaterial.contactEquationRelaxation = 10;
 const cannonDebugger = new CannonDebugger(scene, world);
 // Load models
@@ -176,11 +196,6 @@ scene.add(camera);
 // Controls
 const controls = new OrbitControls(camera, canvas);
 controls.enableDamping = true;
-let text = document.getElementById("camera");
-text.innerHTML = `x: ${camera.position.x}, y: ${camera.position.y}, z: ${camera.position.z}`;
-controls.addEventListener("change", function(e) {
-    text.innerHTML = `x: ${camera.position.x}, y: ${camera.position.y}, z: ${camera.position.z}`;
-});
 
 
 
@@ -198,32 +213,146 @@ renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.shadowMap.enabled = true;
 renderer.toneMapping = THREE.ReinhardToneMapping;
 
-// Controls
-var ballSpeed = false;
+// Update threejs object from cannon body
+function updateObj(obj, body) {
+    obj.position.set(
+        body.position.x,
+        body.position.y,
+        body.position.z
+    );
+    obj.quaternion.set(
+        body.quaternion.x,
+        body.quaternion.y,
+        body.quaternion.z,
+        body.quaternion.w
+    );
+}
+
 var ballRotate = 0;
 var ballPosition = 0;
 
+
 var sourcePos = new THREE.Vector3(0, 0, 5.8);
 var targetPos = new THREE.Vector3(0, 0, 0);
-var direction = new THREE.Vector3().sub(targetPos, sourcePos);
+var direction = new THREE.Vector3().subVectors(targetPos, sourcePos);
 var arrow = new THREE.ArrowHelper(direction.clone().normalize(), sourcePos, direction.length(), 0x00ff00);
 arrow.setDirection(direction.normalize());
 scene.add(arrow);
 arrowUpdate();
 
-var shot = true;
 var speed = -10;
 var newSourcePos; 
 var newTargetPos; 
-
 
 function arrowUpdate(){
     newSourcePos = new THREE.Vector3(ballPosition, 0.068953018, 5.8); /// Position of the arrow
     newTargetPos = new THREE.Vector3(ballPosition + (58*ballRotate), 0, 0); // Where it points to
     arrow.position.copy(newSourcePos);
-    direction = new THREE.Vector3().sub(newTargetPos, newSourcePos);
+    direction = new THREE.Vector3().subVectors(newTargetPos, newSourcePos);
     arrow.setDirection(direction.normalize());
     arrow.setLength(direction.length());
+}
+
+
+// User interaction
+const restartButton = document.getElementById("restartButton");
+function restart(){
+    
+    ballBody.velocity.setZero();
+    ballBody.angularVelocity.setZero();
+    ballBody.position.y = 0.07;
+    ballBody.position.x = 0.0;
+    ballBody.position.z = dx * 60;
+    ballRotate = 0;
+    ball.rotation.y = 0.3;
+    ballPosition = 0;
+    moving = false;
+    arrowUpdate();
+    setupPins();
+}
+restartButton.onclick = restart;
+const shootButton = document.getElementById("shoot");
+let moving = false;
+
+function shoot(){
+    if (!moving) {
+        moving = true;
+        ballBody.position.y = 0.5;
+        speed = -10;
+        ballBody.velocity.set(0, 0, speed);
+        ball.position.z -= speed;
+        ballBody.position.x += ballRotate;
+        window.setTimeout(function() {
+            checkScore();
+        }, 2000);
+    }
+}
+shootButton.onclick = shoot;
+
+
+document.onkeydown = function(move){
+    if(move.keyCode === 39){
+        if(!moving){
+            // move ball position right
+            ballPosition += 0.03;
+            ballBody.position.x += 0.03;
+            arrowUpdate()
+        }
+    }
+    else if(move.keyCode === 37){
+        if(!moving){
+            //move ball position left
+            ballPosition -= 0.03;
+            ballBody.position.x -= 0.03;
+            arrowUpdate()
+            
+        }
+    }
+    else if(move.keyCode === 38){
+        if(!moving){
+            ballRotate += 0.001;
+            ball.rotation.y -= 0.01;
+            arrowUpdate()    
+        }
+    }
+    else if(move.keyCode === 40){
+        if(!moving){
+            ballRotate -= 0.001;
+            ball.rotation.y += 0.01;
+            arrowUpdate()
+        }
+    }
+    // Space Bar
+    else if(move.keyCode === 32){
+    }
+}
+
+const score = document.getElementById("score");
+// Check number of pins down
+function checkScore() {
+    score.innerHTML = "Waiting...";
+    let ready = false;
+    let interval = window.setInterval(function() {
+        if (ready) {
+            //moving = false;
+            clearInterval(interval);
+            let total = 0;
+            for (let i = 0; i < pins.length; i++) {
+                if (pinBodies[i].position.y < -0.5 || Math.abs(pins[i].rotation.x) >= Math.PI / 3 || Math.abs(pins[i].rotation.z) >= Math.PI / 3) {
+                    total++;
+                }
+            }
+            score.innerHTML = total;
+        }
+        else {
+            ready = true;
+            for (let i = 0; i < pins.length; i++) {
+                if (pinBodies[i].position.y > -0.5 && (pinBodies[i].velocity.x > 0.05 || pinBodies[i].velocity.y > 0.05 || pinBodies[i].velocity.z > 0.05)) {
+                    ready = false;
+                }
+            }
+        }
+    }, 1000);
 }
 
 /**
@@ -231,119 +360,24 @@ function arrowUpdate(){
  */
 const animate = () =>
 {
-    var restartButton = document.getElementById("restartButton");
-    restartButton.onclick = function restart(){
-        ball.position.z = dx * 58;
-        ball.position.y = .068953018;
-        ball.position.x = 0;
-        ballSpeed = false;
-        ballRotate = 0;
-        ball.rotation.y = 0.3;
-        ballPosition = 0;
-        speed = 0;
-        ballBody.velocity.set(0, 0, speed);
-        ballBody.position.y = 0.07;
-        ballBody.position.x = 0.0;
-        ballBody.position.z = dx * 60;
-        arrowUpdate();
-        shot = true;
-
-        world.removeBody(ballBody);
-        scene.remove(ball);
-
-        Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowling_pin/scene.gltf')]).then(models => {
-            setupBall(models[0].scene);
-        });
-
-    }
-
-    var shootButton = document.getElementById("shoot");
-    shootButton.onclick = function shoot(){
-        ballBody.position.y = 0.5;
-        speed = -10;
-        ballBody.velocity.set(0, 0, speed);
-        ballSpeed = true;
-        shot = false;
-    }
-
     
-    // Update objects
-    if(ballSpeed == true){
-        ball.position.z -= speed;
+    if(moving){
         ballBody.position.x += ballRotate;
-    }
-
-    document.onkeydown = function(move){
-        if(move.keyCode === 39){
-            if(shot){
-                // move ball position right
-                ballPosition += 0.03;
-                ballBody.position.x += 0.03;
-                    arrowUpdate()
-            }
-        }
-        else if(move.keyCode === 37){
-            if(shot){
-                //move ball position left
-                ballPosition -= 0.03;
-                ballBody.position.x -= 0.03;
-                arrowUpdate()
-            }
-        }
-        else if(move.keyCode === 38){
-            if(shot){
-                ballRotate += 0.001;
-                ball.rotation.y -= 0.01;
-                arrowUpdate()
-            }
-        }
-        else if(move.keyCode === 40){
-            if(shot){
-                ballRotate -= 0.001;
-                ball.rotation.y += 0.01;
-                arrowUpdate()
-            }
-        }   
-        // Space Bar
-        else if(move.keyCode === 32){
-
-        }
     }
     // Update Orbital Controls
     controls.update()
-
-
     // Update objects
-    ball.position.set(
-        ballBody.position.x,
-        ballBody.position.y,
-        ballBody.position.z
-    );
-    ball.quaternion.set(
-        ballBody.quaternion.x,
-        ballBody.quaternion.y,
-        ballBody.quaternion.z,
-        ballBody.quaternion.w,
-    );
+    updateObj(ball, ballBody);
     for (let i = 0; i < pins.length; i++) {
-        pins[i].position.set(
-            pinBodies[i].position.x,
-            pinBodies[i].position.y,
-            pinBodies[i].position.z
-        );
-        pins[i].quaternion.set(
-            pinBodies[i].quaternion.x,
-            pinBodies[i].quaternion.y,
-            pinBodies[i].quaternion.z,
-            pinBodies[i].quaternion.w
-        );
+        updateObj(pins[i], pinBodies[i]);
     }
 
     world.fixedStep();
+    // Show cannon bodies
     // cannonDebugger.update();
     // Render
     renderer.render(scene, camera);
 
-    // Callanimate again on the next frame
+    // Call animate again on the next frame
     window.requestAnimationFrame(animate);
 };
