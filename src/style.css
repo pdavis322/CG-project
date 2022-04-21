@@ -8,7 +8,11 @@ html,
 body
 {
     height: 100vh;
-    font-family: 'Poppins';
+    font-family: 'Poppins', sans-serif;
+}
+
+h2 {
+    padding: 0.5rem;
 }
 
 .webgl
@@ -17,6 +21,9 @@ body
     top: 0;
     left: 0;
     outline: none;
+}
+button {
+    font-family: 'Poppins', sans-serif;
 }
 
 /* Restart Button */
