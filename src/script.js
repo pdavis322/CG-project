@@ -203,6 +203,7 @@ scene.add(camera);
 
 // Controls
 const controls = new OrbitControls(camera, canvas);
+controls.saveState();
 controls.enableDamping = true;
 
 
@@ -298,9 +299,9 @@ const defaultViewButton = document.getElementById("defaultView");
 function defaultView(){
     controls.enableDamping = false;
     controls.update();
-    camera.position.set(0, 0.5, dx * 70);
+    controls.reset();
     controls.enableDamping = true;
-    controls.update();
+    controls.reset();
 }
 defaultViewButton.onclick = defaultView;
 
