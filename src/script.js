@@ -68,15 +68,17 @@ function setupFloor() {
         floorMat.roughnessMap = map;
         floorMat.needsUpdate = true;
     } );
-    const floorGeometry = new THREE.PlaneGeometry(60, 1);
+    const floorGeometry = new THREE.PlaneGeometry(7, 1);
     const floorMesh = new THREE.Mesh(floorGeometry, floorMat);
     floorMesh.receiveShadow = true;
     floorMesh.rotation.x = -Math.PI / 2;
     floorMesh.rotation.z = Math.PI / 2;
+    floorMesh.position.z = 3;
     scene.add(floorMesh);
     // Physics
-    const floorShape = new CANNON.Box(new CANNON.Vec3(60, 0.5, 1));
+    const floorShape = new CANNON.Box(new CANNON.Vec3(7, 0.5, 1));
     const floorBody = new CANNON.Body({mass: 0, shape: floorShape});
+    floorBody.position.z = 6.5;
     floorBody.addShape(floorShape);
     floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, Math.PI / 2);
     floorBody.position.y = -1;
@@ -104,6 +106,9 @@ function setupPins(pinModel) {
     // Need to do this outside of if statement for resetting pins
     for (let i = 0; i < 10; i++) {
         pinBodies[i].position.y = 0;
+        pinBodies[i].velocity.setZero();
+        pinBodies[i].angularVelocity.setZero();
+        pinBodies[i].quaternion.set(0, 0, 0, 1);
     }
     pinBodies[0].position.x = 0;
     pinBodies[0].position.z = 0;
@@ -249,10 +254,12 @@ function arrowUpdate(){
 const restartButton = document.getElementById("restartButton");
 function restart(){
     ballBody.velocity.setZero();
+    ballBody.angularVelocity.setZero();
     ballBody.position.y = 0.07;
     ballBody.position.x = 0.0;
     ballBody.position.z = dx * 60;
     arrowUpdate();
+    setupPins();
 }
 restartButton.onclick = restart;
 const shootButton = document.getElementById("shoot");
@@ -297,7 +304,6 @@ document.onkeydown = function(move){
     }
     // Space Bar
     else if(move.keyCode === 32){
-        shoot();
     }
 }
 
@@ -313,17 +319,15 @@ function checkScore() {
             let total = 0;
             for (let i = 0; i < pins.length; i++) {
                 if (pinBodies[i].position.y < -0.5 || Math.abs(pins[i].rotation.x) >= Math.PI / 3 || Math.abs(pins[i].rotation.z) >= Math.PI / 3) {
-                    console.log(pins[i].rotation);
                     total++;
                 }
             }
             score.innerHTML = total;
         }
         else {
-            console.log('not ready!');
             ready = true;
             for (let i = 0; i < pins.length; i++) {
-                if (pinBodies[i].position.y > -0.5 && (pinBodies[i].velocity.x > 0.1 || pinBodies[i].velocity.y > 0.1 || pinBodies[i].velocity.z > 0.1)) {
+                if (pinBodies[i].position.y > -0.5 && (pinBodies[i].velocity.x > 0.05 || pinBodies[i].velocity.y > 0.05 || pinBodies[i].velocity.z > 0.05)) {
                     ready = false;
                 }
             }
@@ -346,7 +350,7 @@ const animate = () =>
 
     world.fixedStep();
     // Show cannon bodies
-    cannonDebugger.update();
+    // cannonDebugger.update();
     // Render
     renderer.render(scene, camera);
 
