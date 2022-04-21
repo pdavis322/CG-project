@@ -133,6 +133,14 @@ function setupPins(pinModel) {
             console.log(pinBodies[i].position);
         }
     }, 2000);
+
+}
+
+function setupBackground(){
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load('background/background1.jpg', function ( texture ) {
+        scene.background = texture;  
+    } );
 }
 
 // Set up cannon
@@ -148,6 +156,7 @@ Promise.all([loader.loadAsync('bowling_ball/scene.gltf'), loader.loadAsync('bowl
     setupBall(models[0].scene);
     setupFloor();
     setupPins(models[1].scene);
+    setupBackground();
     animate();
 });
 
@@ -195,6 +204,7 @@ scene.add(camera);
 
 // Controls
 const controls = new OrbitControls(camera, canvas);
+controls.saveState();
 controls.enableDamping = true;
 
 
@@ -228,6 +238,9 @@ function updateObj(obj, body) {
     );
 }
 
+
+var ballSpeed = false;
+
 var ballRotate = 0;
 var ballPosition = 0;
 
@@ -257,16 +270,18 @@ function arrowUpdate(){
 // User interaction
 const restartButton = document.getElementById("restartButton");
 function restart(){
-    
+
     ballBody.velocity.setZero();
     ballBody.angularVelocity.setZero();
     ballBody.position.y = 0.07;
     ballBody.position.x = 0.0;
     ballBody.position.z = dx * 60;
+
     ballRotate = 0;
     ball.rotation.y = 0.3;
     ballPosition = 0;
     moving = false;
+
     arrowUpdate();
     setupPins();
 }
@@ -289,6 +304,15 @@ function shoot(){
 }
 shootButton.onclick = shoot;
 
+const defaultViewButton = document.getElementById("defaultView");
+function defaultView(){
+    controls.enableDamping = false;
+    controls.update();
+    controls.reset();
+    controls.enableDamping = true;
+    controls.reset();
+}
+defaultViewButton.onclick = defaultView;
 
 document.onkeydown = function(move){
     if(move.keyCode === 39){
@@ -360,10 +384,12 @@ function checkScore() {
  */
 const animate = () =>
 {
+
     
     if(moving){
         ballBody.position.x += ballRotate;
     }
+
     // Update Orbital Controls
     controls.update()
     // Update objects

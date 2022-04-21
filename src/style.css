@@ -8,7 +8,11 @@ html,
 body
 {
     height: 100vh;
-    font-family: 'Poppins';
+    font-family: 'Poppins', sans-serif;
+}
+
+h2 {
+    padding: 0.5rem;
 }
 
 .webgl
@@ -17,6 +21,9 @@ body
     top: 0;
     left: 0;
     outline: none;
+}
+button {
+    font-family: 'Poppins', sans-serif;
 }
 
 /* Restart Button */
@@ -39,4 +46,15 @@ body
     position: absolute;
     z-index: 2;
     background: red; 
+}
+
+/* Default View Button */
+#defaultView {
+    top:1%;
+    left:73%;
+    width:100px;
+    height:40px;
+    position: absolute;
+    z-index: 2;
+    background: rgb(132, 216, 255); 
 }
