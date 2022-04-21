@@ -292,6 +292,16 @@ function shoot(){
 }
 shootButton.onclick = shoot;
 
+const defaultViewButton = document.getElementById("defaultView");
+function defaultView(){
+    controls.enableDamping = false;
+    controls.update();
+    camera.position.set(0, 0.5, dx * 70);
+    controls.enableDamping = true;
+    controls.update();
+}
+defaultViewButton.onclick = defaultView;
+
 document.onkeydown = function(move){
     if(move.keyCode === 39){
         // move ball position right
