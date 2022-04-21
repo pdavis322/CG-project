@@ -83,21 +83,29 @@ function setupFloor() {
 }
 
 function setupPins(pinModel) {
-    let pin = pinModel;
-    pin.traverse(function(child) {
-        if (child.geometry !== undefined) {
-            child.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, -.1666039322183284, 0));
+    if (pinModel) {
+        let pin = pinModel;
+        pin.traverse(function(child) {
+            if (child.geometry !== undefined) {
+                child.geometry.applyMatrix4(new THREE.Matrix4().makeTranslation(0, -.1666039322183284, 0));
+            }
+        });
+        const cylinderShape = new CANNON.Cylinder(0.028, 0.05, 0.333296895);
+        for (let i = 0; i < 10; i++) {
+            pins.push(pin.clone());
+            scene.add(pins[i]);
+            let pinBody = new CANNON.Body({mass: 0.1, shape: cylinderShape});
+            pinBodies.push(pinBody);
+            world.addBody(pinBodies[i]);
         }
-    });
-    const cylinderShape = new CANNON.Cylinder(0.028, 0.05, 0.333296895);
-    for (let i = 0; i < 10; i++) {
-        pins.push(pin.clone());
-        scene.add(pins[i]);
-        let pinBody = new CANNON.Body({mass: 0.1, shape: cylinderShape});
-        pinBodies.push(pinBody);
-        world.addBody(pinBodies[i]);
     }
     // TODO: rewrite this, support n rows of pins
+    // Need to do this outside of if statement for resetting pins
+    for (let i = 0; i < 10; i++) {
+        pinBodies[i].position.y = 0;
+    }
+    pinBodies[0].position.x = 0;
+    pinBodies[0].position.z = 0;
     pinBodies[1].position.x = dx;
     pinBodies[1].position.z = dz;
     pinBodies[2].position.x = -dx;
@@ -304,20 +312,30 @@ document.onkeydown = function(move){
 
 // Check number of pins down
 function pinsDown() {
-    let ready = true;
-    for (let i = 0; i < pins.length; i++) {
-        if (pinBodies[i].velocity.x > 0.5 || pinBodies[i].velocity.y > 0.5 || pinBodies[i].velocity.z > 0.5) {
-            ready = false;
+    let ready = false;
+    let interval = window.setInterval(function() {
+        if (ready) {
+            moving = false;
+            clearInterval(interval);
+            let total = 0;
+            for (let i = 0; i < pins.length; i++) {
+                if (Math.abs(pins[i].rotation.z) >= Math.PI / 3 ) {
+                    console.log(pins[i].rotation);
+                    total++;
+                }
+            }
+            console.log(total);
         }
-    }
-    if (!ready) {
-        window.setTimeout(pinsDown, 500);
-    }
-    else {
-        for (let i = 0; i < pins.length; i++) {
-            console.log(pinBodies[i].velocity);
+        else {
+            console.log('not ready!');
+            ready = true;
+            for (let i = 0; i < pins.length; i++) {
+                if (pinBodies[i].velocity.x > 0.2 || pinBodies[i].velocity.y > 0.2 || pinBodies[i].velocity.z > 0.2) {
+                    ready = false;
+                }
+            }
         }
-    }
+    }, 500);
 }
 function checkScore() {
     window.setTimeout(function() {
