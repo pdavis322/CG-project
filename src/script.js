@@ -133,6 +133,7 @@ function setupPins(pinModel) {
             console.log(pinBodies[i].position);
         }
     }, 2000);
+
 }
 
 function setupBackground(){
@@ -237,7 +238,9 @@ function updateObj(obj, body) {
     );
 }
 
+
 var ballSpeed = false;
+
 var ballRotate = 0;
 var ballPosition = 0;
 
@@ -267,30 +270,36 @@ function arrowUpdate(){
 // User interaction
 const restartButton = document.getElementById("restartButton");
 function restart(){
+
     ballBody.velocity.setZero();
     ballBody.angularVelocity.setZero();
     ballBody.position.y = 0.07;
     ballBody.position.x = 0.0;
     ballBody.position.z = dx * 60;
-    ballPosition = 0;
+
     ballRotate = 0;
+    ball.rotation.y = 0.3;
+    ballPosition = 0;
+    moving = false;
+
     arrowUpdate();
     setupPins();
 }
 restartButton.onclick = restart;
 const shootButton = document.getElementById("shoot");
 let moving = false;
+
 function shoot(){
     if (!moving) {
         moving = true;
         ballBody.position.y = 0.5;
         speed = -10;
         ballBody.velocity.set(0, 0, speed);
-        ballSpeed = true;
+        ball.position.z -= speed;
+        ballBody.position.x += ballRotate;
         window.setTimeout(function() {
-            moving = false;
             checkScore();
-        }, 1000);
+        }, 2000);
     }
 }
 shootButton.onclick = shoot;
@@ -307,26 +316,35 @@ defaultViewButton.onclick = defaultView;
 
 document.onkeydown = function(move){
     if(move.keyCode === 39){
-        // move ball position right
-        ballPosition += 0.03;
-        ballBody.position.x += 0.03;
-        arrowUpdate()
+        if(!moving){
+            // move ball position right
+            ballPosition += 0.03;
+            ballBody.position.x += 0.03;
+            arrowUpdate()
+        }
     }
     else if(move.keyCode === 37){
-        //move ball position left
-        ballPosition -= 0.03;
-        ballBody.position.x -= 0.03;
-        arrowUpdate()
+        if(!moving){
+            //move ball position left
+            ballPosition -= 0.03;
+            ballBody.position.x -= 0.03;
+            arrowUpdate()
+            
+        }
     }
     else if(move.keyCode === 38){
-        ballRotate += 0.001;
-        ball.rotation.y -= 0.01;
-        arrowUpdate()
+        if(!moving){
+            ballRotate += 0.001;
+            ball.rotation.y -= 0.01;
+            arrowUpdate()    
+        }
     }
     else if(move.keyCode === 40){
-        ballRotate -= 0.001;
-        ball.rotation.y += 0.01;
-        arrowUpdate()
+        if(!moving){
+            ballRotate -= 0.001;
+            ball.rotation.y += 0.01;
+            arrowUpdate()
+        }
     }
     // Space Bar
     else if(move.keyCode === 32){
@@ -340,7 +358,7 @@ function checkScore() {
     let ready = false;
     let interval = window.setInterval(function() {
         if (ready) {
-            moving = false;
+            //moving = false;
             clearInterval(interval);
             let total = 0;
             for (let i = 0; i < pins.length; i++) {
@@ -358,7 +376,7 @@ function checkScore() {
                 }
             }
         }
-    }, 500);
+    }, 1000);
 }
 
 /**
@@ -366,6 +384,12 @@ function checkScore() {
  */
 const animate = () =>
 {
+
+    
+    if(moving){
+        ballBody.position.x += ballRotate;
+    }
+
     // Update Orbital Controls
     controls.update()
     // Update objects
